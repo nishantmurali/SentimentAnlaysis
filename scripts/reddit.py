@@ -1,36 +1,39 @@
 import praw
 import pandas as pd
+import datetime
 
-def fetch_comments(subreddit, keywords):
+def fetch_comments(reddit, subreddit, keywords):
     data = []
     extractedIDs = []
+    subreddit = reddit.subreddit(subreddit)
+
 
     for keyword in keywords:
-        for submission in subreddit.search(query=keyword, sort='new', syntax='lucene', limit=10):
+        for submission in subreddit.search(query=keyword, sort='new', syntax='lucene', limit=None):
             submissionID = submission.id
             if submissionID in extractedIDs:
                 print(f"Skipping submission (ID: {submissionID})")
                 continue
             
             extractedIDs.append(submissionID)
-            submissionCreatedTime = submission.created_utc
             title = submission.title
 
             print(f"Found submission: {title} (ID: {submissionID})")
 
-            submission.comments.replace_more(limit=10)  # Flatten comments (handle "more comments")
+            submission.comments.replace_more(limit=None)  # Flatten comments (handle "more comments")
             for comment in submission.comments.list():
                 data.append({
+                    'Subreddit': 'r/cybertruck',
                     'SubmissionID': submissionID,
-                    'SubmissionCreatedTime': submission.created_utc,
-                    'Title': submission.title,
-                    'Selftext': submission.selftext,
+                    'Submission Created Time': datetime.datetime.fromtimestamp(submission.created_utc),
+                    'Submission Title': submission.title,
+                    'Submission Body': submission.selftext,
                     'Score': submission.score,
                     'URL': submission.url,
-                    'CommentID': comment.id,
-                    'CommentBody': comment.body,
-                    'CommentScore': comment.score,
-                    'CommentCreatedTime': comment.created_utc
+                    'Comment ID': comment.id,
+                    'Comment Body': comment.body,
+                    'Comment Score': comment.score,
+                    'Comment Created Time': datetime.datetime.fromtimestamp(comment.created_utc)
                 })
         
     df = pd.DataFrame(data)
@@ -45,9 +48,14 @@ def runScript():
     
     keywords = ['CT', 'cybertruck', 'cyber', 'cyberbeast']
 
-    subreddit = reddit.subreddit("cybertruck")
+    start_date = datetime.timedelta(days=30)
+    end_date = datetime.date.today()
 
-    df = fetch_comments(subreddit, keywords)
+    df = fetch_comments(reddit, 'cybertruck', keywords, start_date, end_date)
+    df = fetch_comments(reddit, 'realtesla', keywords, start_date, end_date)
+    df = fetch_comments(reddit, 'teslamotors', keywords, start_date, end_date)
+
+
 
     df.to_csv('reddit_comments.csv', index = False)
 
