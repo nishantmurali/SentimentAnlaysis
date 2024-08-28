@@ -2,7 +2,7 @@ import praw
 import pandas as pd
 import datetime
 
-def fetch_comments(reddit, subreddit, keywords):
+def fetch_comments(reddit, subreddit, keywords, start_date, end_date):
     data = []
     extractedIDs = []
     subreddit = reddit.subreddit(subreddit)
@@ -11,7 +11,7 @@ def fetch_comments(reddit, subreddit, keywords):
     for keyword in keywords:
         for submission in subreddit.search(query=keyword, sort='new', syntax='lucene', limit=None):
             submissionID = submission.id
-            if submissionID in extractedIDs:
+            if submissionID in extractedIDs and datetime.datetime.fromtimestamp(submission.created_utc) < end_date:
                 print(f"Skipping submission (ID: {submissionID})")
                 continue
             
